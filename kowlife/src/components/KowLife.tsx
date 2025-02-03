@@ -1,213 +1,314 @@
-// components/KowLife.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-// Types
-export type Character = {
-  id: string;
+type Character = {
   name: string;
   age: number;
-  health: number;
-  happiness: number;
-  intelligence: number;
-  wealth: number;
   country: string;
-  career?: string;
-  education?: string;
-  relationships: Relationship[];
-  inventory: string[];
+  stats: {
+    happiness: number;
+    health: number;
+    intelligence: number;
+    looks: number;
+    money: number;
+  };
+  education: string[];
+  career?: {
+    job: string;
+    salary: number;
+  };
+  relationships: string[];
 };
 
-type Relationship = {
-  name: string;
-  type: 'Family' | 'Friend' | 'Romantic';
-  closeness: number;
+type LifeEvent = {
+  age: number;
+  description: string;
+  type: 'positive' | 'negative' | 'neutral';
 };
 
 const COUNTRIES = [
-  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 
-  'Japan', 'Brazil', 'India', 'China', 'France'
+  'United States', 'United Kingdom', 'Canada', 
+  'Australia', 'Germany', 'Japan', 'Brazil'
 ];
 
-const CAREERS = [
-  'Student', 'Doctor', 'Teacher', 'Engineer', 'Lawyer', 
-  'Entrepreneur', 'Artist', 'Scientist', 'Police Officer', 'Programmer'
-];
-
-const EDUCATION_PATHS = [
-  'High School', 'Community College', 'University', 'Graduate School'
-];
+const CAREERS = {
+  'High School': [],
+  'Community College': [
+    'Retail Worker', 'Office Assistant', 'Technician', 
+    'Sales Representative', 'Nurse'
+  ],
+  'University': [
+    'Software Engineer', 'Doctor', 'Lawyer', 
+    'Teacher', 'Accountant', 'Scientist'
+  ],
+  'Graduate School': [
+    'Surgeon', 'University Professor', 'Research Scientist', 
+    'Corporate Lawyer', 'Specialized Consultant'
+  ]
+};
 
 const KowLife: React.FC = () => {
   const [character, setCharacter] = useState<Character | null>(null);
-  const [gameLog, setGameLog] = useState<string[]>([]);
-
-  const generateRandomName = (): string => {
-    const firstNames = ['Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'Ethan', 'Sophia', 'Mason', 'Isabella', 'William'];
-    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-    
-    return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
-  };
+  const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
+  const [activeMenu, setActiveMenu] = useState<'life' | 'stats' | 'relationships' | 'activities'>('life');
+  const [eventPopup, setEventPopup] = useState<LifeEvent | null>(null);
+  const [educationModal, setEducationModal] = useState(false);
+  const [careerModal, setCareerModal] = useState(false);
 
   const createCharacter = () => {
     const newCharacter: Character = {
-      id: Date.now().toString(),
-      name: generateRandomName(),
+      name: generateName(),
       age: 0,
-      health: 100,
-      happiness: 50,
-      intelligence: 50,
-      wealth: 0,
       country: COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)],
-      relationships: [],
-      inventory: []
+      stats: {
+        happiness: 50,
+        health: 100,
+        intelligence: 50,
+        looks: 50,
+        money: 0
+      },
+      education: [],
+      relationships: []
     };
     setCharacter(newCharacter);
-    addGameLog(`New life begins for ${newCharacter.name} in ${newCharacter.country}`);
+    addLifeEvent({
+      age: 0,
+      description: `You were born in ${newCharacter.country}!`,
+      type: 'neutral'
+    });
   };
 
-  const addGameLog = (message: string) => {
-    setGameLog(prev => [message, ...prev].slice(0, 10));
+  const generateName = (): string => {
+    const firstNames = ['Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'Ethan'];
+    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia'];
+    return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
   };
 
-  const progressAge = () => {
+  const addLifeEvent = (event: LifeEvent) => {
+    setLifeEvents(prev => [event, ...prev]);
+    setEventPopup(event);
+  };
+
+  const progressYear = () => {
     if (!character) return;
 
     const updatedCharacter = { ...character };
     updatedCharacter.age += 1;
 
     // Random life events
-    if (Math.random() < 0.2) {
-      const events = [
-        'Found a lucky coin',
-        'Got a minor injury',
-        'Made a new friend',
-        'Learned a new skill',
-        'Experienced a setback'
-      ];
-      const randomEvent = events[Math.floor(Math.random() * events.length)];
-      addGameLog(randomEvent);
+    const randomEvents = [
+      { 
+        description: 'You made a new friend!', 
+        type: 'positive' as const,
+        statChanges: { happiness: 10 }
+      },
+      { 
+        description: 'You caught a minor illness.', 
+        type: 'negative' as const,
+        statChanges: { health: -10 }
+      },
+      { 
+        description: 'You learned something new!', 
+        type: 'positive' as const,
+        statChanges: { intelligence: 5 }
+      }
+    ];
 
-      updatedCharacter.happiness += Math.floor(Math.random() * 10) - 5;
-      updatedCharacter.health -= Math.floor(Math.random() * 5);
-      updatedCharacter.intelligence += Math.floor(Math.random() * 5);
+    const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+    
+    // Apply stat changes
+    Object.entries(event.statChanges).forEach(([stat, change]) => {
+      updatedCharacter.stats[stat] = Math.max(0, Math.min(100, 
+        updatedCharacter.stats[stat] + change
+      ));
+    });
+
+    // Education milestones
+    if (updatedCharacter.age === 6) {
+      addLifeEvent({
+        age: updatedCharacter.age,
+        description: 'You started elementary school!',
+        type: 'neutral'
+      });
     }
-
-    // Career and education progression
-    if (updatedCharacter.age === 18 && !updatedCharacter.education) {
-      updatedCharacter.education = 'High School';
-      addGameLog('Graduated High School');
+    if (updatedCharacter.age === 14) {
+      addLifeEvent({
+        age: updatedCharacter.age,
+        description: 'You entered high school!',
+        type: 'neutral'
+      });
+      updatedCharacter.education.push('High School');
     }
-
-    // Ensure stats stay within bounds
-    updatedCharacter.happiness = Math.max(0, Math.min(100, updatedCharacter.happiness));
-    updatedCharacter.health = Math.max(0, Math.min(100, updatedCharacter.health));
-    updatedCharacter.intelligence = Math.max(0, Math.min(100, updatedCharacter.intelligence));
 
     setCharacter(updatedCharacter);
+    addLifeEvent({
+      age: updatedCharacter.age,
+      description: event.description,
+      type: event.type
+    });
   };
 
-  const chooseCareer = (career: string) => {
+  const selectEducation = (education: string) => {
     if (!character) return;
-    const updatedCharacter = { ...character, career };
+    const updatedCharacter = { ...character };
+    updatedCharacter.education.push(education);
     setCharacter(updatedCharacter);
-    addGameLog(`Chose career as ${career}`);
+    setEducationModal(false);
+  };
+
+  const selectCareer = (career: string) => {
+    if (!character) return;
+    const updatedCharacter = { 
+      ...character, 
+      career: { 
+        job: career, 
+        salary: Math.floor(Math.random() * 50000) + 30000 
+      } 
+    };
+    setCharacter(updatedCharacter);
+    setCareerModal(false);
   };
 
   if (!character) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <Card className="w-[400px]">
-          <CardHeader>
-            <CardTitle>Welcome to KowLife</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={createCharacter} className="w-full">
-              Start New Life
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="h-screen bg-gray-100 flex items-center justify-center">
+        <Button onClick={createCharacter} className="text-xl p-6">
+          Start New Life
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>KowLife: {character.name}'s Journey</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <h2 className="text-xl font-bold">Character Details</h2>
-              <p>Name: {character.name}</p>
-              <p>Age: {character.age}</p>
-              <p>Country: {character.country}</p>
-              {character.career && <p>Career: {character.career}</p>}
-              {character.education && <p>Education: {character.education}</p>}
+    <div className="h-screen flex flex-col bg-white">
+      {/* Event Popup */}
+      {eventPopup && (
+        <Dialog open={!!eventPopup} onOpenChange={() => setEventPopup(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Life Event</DialogTitle>
+            </DialogHeader>
+            <div className={`p-4 ${
+              eventPopup.type === 'positive' ? 'bg-green-100' : 
+              eventPopup.type === 'negative' ? 'bg-red-100' : 'bg-gray-100'
+            }`}>
+              <p>{eventPopup.description}</p>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold">Stats</h3>
-              <div className="space-y-2">
-                <div>
-                  <span>Health:</span>
-                  <Progress value={character.health} className="mt-1" />
-                </div>
-                <div>
-                  <span>Happiness:</span>
-                  <Progress value={character.happiness} className="mt-1" />
-                </div>
-                <div>
-                  <span>Intelligence:</span>
-                  <Progress value={character.intelligence} className="mt-1" />
-                </div>
-              </div>
-            </div>
-          </div>
+            <Button onClick={() => setEventPopup(null)}>Close</Button>
+          </DialogContent>
+        </Dialog>
+      )}
 
-          <Tabs defaultValue="actions" className="mt-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="actions">Actions</TabsTrigger>
-              <TabsTrigger value="career">Career</TabsTrigger>
-              <TabsTrigger value="log">Game Log</TabsTrigger>
-            </TabsList>
-            <TabsContent value="actions">
-              <Button onClick={progressAge} className="w-full">
-                Progress to Next Year
-              </Button>
-            </TabsContent>
-            <TabsContent value="career">
-              <div className="grid grid-cols-2 gap-2">
-                {CAREERS.map((career) => (
+      {/* Main Content Area */}
+      <div className="flex-grow overflow-y-auto p-4">
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold">{character.name}</h2>
+          <p>Age: {character.age} | {character.country}</p>
+        </div>
+
+        {/* Life Log */}
+        <div className="bg-gray-100 rounded-lg p-2 max-h-[60vh] overflow-y-auto">
+          {lifeEvents.map((event, index) => (
+            <div 
+              key={index} 
+              className={`p-2 border-b ${
+                event.type === 'positive' ? 'bg-green-50' : 
+                event.type === 'negative' ? 'bg-red-50' : 'bg-gray-50'
+              }`}
+            >
+              Age {event.age}: {event.description}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom Menu */}
+      <div className="bg-gray-200 p-2">
+        {/* Stats Display */}
+        <div className="flex justify-between mb-2 text-sm">
+          <span>💗 {character.stats.health}</span>
+          <span>😊 {character.stats.happiness}</span>
+          <span>🧠 {character.stats.intelligence}</span>
+          <span>💰 ${character.stats.money}</span>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-4 gap-2 mb-2">
+          <Button 
+            variant="outline"
+            onClick={() => setEducationModal(true)}
+          >
+            Education
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setCareerModal(true)}
+          >
+            Career
+          </Button>
+          <Button variant="outline">Relationships</Button>
+          <Button variant="outline">Assets</Button>
+        </div>
+
+        {/* Year Progress Button */}
+        <Button 
+          className="w-full" 
+          onClick={progressYear}
+        >
+          Age Up
+        </Button>
+      </div>
+
+      {/* Education Modal */}
+      {educationModal && (
+        <Dialog open={educationModal} onOpenChange={() => setEducationModal(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Choose Education</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {Object.keys(CAREERS)
+                .filter(edu => !character.education.includes(edu))
+                .map(education => (
+                  <Button 
+                    key={education} 
+                    className="w-full"
+                    onClick={() => selectEducation(education)}
+                  >
+                    {education}
+                  </Button>
+                ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Career Modal */}
+      {careerModal && (
+        <Dialog open={careerModal} onOpenChange={() => setCareerModal(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Choose Career</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {character.education.length > 0 && 
+                CAREERS[character.education[character.education.length - 1] as keyof typeof CAREERS].map(career => (
                   <Button 
                     key={career} 
-                    onClick={() => chooseCareer(career)}
-                    variant="outline"
+                    className="w-full"
+                    onClick={() => selectCareer(career)}
                   >
                     {career}
                   </Button>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="log">
-              <div className="bg-gray-100 p-4 rounded-md max-h-48 overflow-y-auto">
-                <h3 className="font-bold mb-2">Life Events</h3>
-                {gameLog.map((log, index) => (
-                  <div key={index} className="text-sm border-b py-1">
-                    {log}
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                ))
+              }
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
