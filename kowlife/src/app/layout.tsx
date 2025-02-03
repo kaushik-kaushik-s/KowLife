@@ -1,21 +1,23 @@
-import './globals.css';
+// app/layout.tsx
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-export const metadata = {
-  title: 'KowLife',
-  description: 'A BitLife clone built with Next.js',
-};
+const inter = Inter({ subsets: ['latin'] })
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: 'KowLife Simulator',
+  description: 'A life simulation game',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body>
-        <header style={{ padding: '1rem', background: '#333', color: '#fff', textAlign: 'center' }}>
-          <h1>KowLife</h1>
-        </header>
-        <main style={{ margin: '1rem' }}>
-          {children}
-        </main>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
-  );
+  )
 }
